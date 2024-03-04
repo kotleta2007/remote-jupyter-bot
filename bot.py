@@ -61,7 +61,6 @@ async def run(update: Update, context: ContextTypes.DEFAULT_TYPE):
     output = result.stdout
 
     # get DOCKER PID
-    #docker.CIDFILE
     with open(docker.CIDFILE, 'r') as cidfile:
         pid = cidfile.read()
         await context.bot.send_message(chat_id=update.effective_chat.id, text=f'PID: {pid}')
@@ -80,6 +79,11 @@ async def kill(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await context.bot.send_message(chat_id=update.effective_chat.id, text=response)
 
 
+async def ps(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    assert update.effective_chat is not None
+    response = f"Currently running: {running}"
+    await context.bot.send_message(chat_id=update.effective_chat.id, text=response)
+
 def main() -> None:
     """Run the bot."""
     application = ApplicationBuilder().token(TOKEN).build()
@@ -88,11 +92,13 @@ def main() -> None:
     echo_handler = MessageHandler(filters.TEXT & (~filters.COMMAND), echo)
     run_handler = CommandHandler("run", run)
     kill_handler = CommandHandler("kill", kill)
+    ps_handler = CommandHandler("ps", ps)
 
     application.add_handler(start_handler)
     application.add_handler(echo_handler)
     application.add_handler(run_handler)
     application.add_handler(kill_handler)
+    application.add_handler(ps_handler)
 
     application.run_polling()
 
