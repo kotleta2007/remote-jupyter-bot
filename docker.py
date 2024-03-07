@@ -6,7 +6,8 @@ LOCALDIR = '~/python'
 CIDFILE = '/tmp/running_jupyters'
 
 docker_command = [
-    'docker run',
+    'docker',
+    'run',
     f'--cidfile={CIDFILE}',
     f'-p {HOST_PORT}:{DOCKER_PORT}',
     f'-v {LOCALDIR}/{IMAGE}:{WORKDIR}/{IMAGE}',
