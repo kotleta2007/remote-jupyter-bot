@@ -12,6 +12,7 @@ from telegram.ext import (
 )
 import docker
 import subprocess
+import io
 
 # get token from environment
 load_dotenv()
@@ -57,9 +58,30 @@ async def run(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # (multiple instances of a PyTorch notebook)
 
     # get link with token
-    result = subprocess.run(docker.docker_command, capture_output=True, text=True)
-    output = result.stdout
 
+    # result = subprocess.run(docker.docker_command, capture_output=True, text=True)
+    # output = result.stdout
+
+    print(f'Running {docker.docker_command}')
+    docker_process = subprocess.Popen(
+        docker.docker_command,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE
+    )
+
+    output = 'empty'
+    for line in io.TextIOWrapper(docker_process.stderr, encoding="utf-8"):
+        output = line
+        if 'http://127.0.0.1:8888' in line:
+            break
+    print(output)
+
+    # while True:
+    #     output = docker_process.stdout.readline().decode()
+    #     print(output)
+    #     if 'copy and paste' in output:
+    #         break
+        
     # get DOCKER PID
     with open(docker.CIDFILE, 'r') as cidfile:
         pid = cidfile.read()
@@ -76,6 +98,7 @@ async def kill(update: Update, context: ContextTypes.DEFAULT_TYPE):
     notebook = context.args[0]
     response = f"Killing notebook: {notebook}"
     # docker kill DOCKER_PID
+    # remove CIDFILE
     await context.bot.send_message(chat_id=update.effective_chat.id, text=response)
 
 

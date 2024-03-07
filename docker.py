@@ -2,16 +2,16 @@ DOCKER_PORT = 8888
 HOST_PORT   = 8888
 WORKDIR = '/usr/src/jupyter'
 IMAGE = 'quay.io/jupyter/pytorch-notebook'
-LOCALDIR = '~/python'
+LOCALDIR = '/home/mark/python'
 CIDFILE = '/tmp/running_jupyters'
 
 docker_command = [
     'docker',
     'run',
     f'--cidfile={CIDFILE}',
-    f'-p {HOST_PORT}:{DOCKER_PORT}',
-    f'-v {LOCALDIR}/{IMAGE}:{WORKDIR}/{IMAGE}',
-    f'-w {WORKDIR}/{IMAGE} {IMAGE}'
+    '-p', f'{HOST_PORT}:{DOCKER_PORT}',
+    '-v', f'{LOCALDIR}/{IMAGE}:{WORKDIR}/{IMAGE}',
+    '-w', f'{WORKDIR}/{IMAGE}', f'{IMAGE}'
 ]
 
 if __name__ == "__main__":
