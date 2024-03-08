@@ -1,5 +1,5 @@
 DOCKER_PORT = 8888
-HOST_PORT   = 8888
+HOST_PORT = 8888
 WORKDIR = '/usr/src/jupyter'
 IMAGE = 'quay.io/jupyter/pytorch-notebook'
 LOCALDIR = '/home/mark/python'
