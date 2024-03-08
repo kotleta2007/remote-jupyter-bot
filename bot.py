@@ -24,8 +24,8 @@ logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(name)s", level=logging.INFO
 )
 
-# state: running processes
-running: List[str] = []
+# Map(Name -> CID)
+running = {}
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     assert update.effective_chat is not None
@@ -57,11 +57,6 @@ async def run(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # Later, find out how to handle multiple instances of the same image
     # (multiple instances of a PyTorch notebook)
 
-    # get link with token
-
-    # result = subprocess.run(docker.docker_command, capture_output=True, text=True)
-    # output = result.stdout
-
     print(f'Running {docker.docker_command}')
     docker_process = subprocess.Popen(
         docker.docker_command,
@@ -69,23 +64,19 @@ async def run(update: Update, context: ContextTypes.DEFAULT_TYPE):
         stderr=subprocess.PIPE
     )
 
-    output = 'empty'
+    output = ''
     for line in io.TextIOWrapper(docker_process.stderr, encoding="utf-8"):
         output = line
         if 'http://127.0.0.1:8888' in line:
             break
     print(output)
 
-    # while True:
-    #     output = docker_process.stdout.readline().decode()
-    #     print(output)
-    #     if 'copy and paste' in output:
-    #         break
-        
     # get DOCKER PID
     with open(docker.CIDFILE, 'r') as cidfile:
         pid = cidfile.read()
-        await context.bot.send_message(chat_id=update.effective_chat.id, text=f'PID: {pid}')
+        global running
+        running[notebook] = pid
+        await context.bot.send_message(chat_id=update.effective_chat.id, text=f'{notebook} → {pid}')
 
     response = f"Running notebook: {notebook}"
     await context.bot.send_message(chat_id=update.effective_chat.id, text=response)
@@ -96,9 +87,27 @@ async def kill(update: Update, context: ContextTypes.DEFAULT_TYPE):
     assert update.effective_chat is not None
     assert context.args is not None
     notebook = context.args[0]
-    response = f"Killing notebook: {notebook}"
-    # docker kill DOCKER_PID
-    # remove CIDFILE
+    response = f"Killed notebook: {notebook}"
+    
+    global running
+    if notebook not in running.keys():
+        await context.bot.send_message(
+            chat_id=update.effective_chat.id, 
+            text='No such notebook currently running.'
+        )
+        return
+    
+    # kill the docker container
+    docker_process = subprocess.Popen(
+        docker.docker_kill_command(running[notebook]),
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE
+    )
+    # remove the key-value pair from the dictionary
+    del running[notebook]
+
+    # TODO: remove CIDFILE
+
     await context.bot.send_message(chat_id=update.effective_chat.id, text=response)
 
 
