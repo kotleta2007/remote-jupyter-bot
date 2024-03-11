@@ -59,9 +59,10 @@ async def run(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     print(f'Running {docker.docker_command}')
     docker_process = subprocess.Popen(
-        docker.docker_command,
+        ' '.join(docker.docker_command),
         stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE
+        stderr=subprocess.PIPE,
+        shell=True
     )
 
     output = ''
