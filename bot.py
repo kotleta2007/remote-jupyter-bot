@@ -13,6 +13,7 @@ from telegram.ext import (
 import docker
 import subprocess
 import io
+import pathlib
 
 # get token from environment
 load_dotenv()
@@ -48,8 +49,9 @@ async def run(update: Update, context: ContextTypes.DEFAULT_TYPE):
             chat_id=update.effective_chat.id, text="Provide a notebook name."
         )
         return
-
+    
     notebook = context.args[0]
+    await context.bot.send_message(chat_id=update.effective_chat.id, text=f"Starting notebook: {notebook}")
 
     #TODO: check if the cid file already exists
     # this means that the notebook is already running:
@@ -57,7 +59,7 @@ async def run(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # Later, find out how to handle multiple instances of the same image
     # (multiple instances of a PyTorch notebook)
 
-    print(f'Running {docker.docker_command}')
+    # print(f'Running {docker.docker_command}')
     docker_process = subprocess.Popen(
         ' '.join(docker.docker_command),
         stdout=subprocess.PIPE,
@@ -65,23 +67,23 @@ async def run(update: Update, context: ContextTypes.DEFAULT_TYPE):
         shell=True
     )
 
+    # parse jupyter token
     output = ''
     for line in io.TextIOWrapper(docker_process.stderr, encoding="utf-8"):
         output = line
         if 'http://127.0.0.1:8888' in line:
             break
-    print(output)
+    output = docker.get_token(output)
 
     # get DOCKER PID
     with open(docker.CIDFILE, 'r') as cidfile:
         pid = cidfile.read()
         global running
         running[notebook] = pid
-        await context.bot.send_message(chat_id=update.effective_chat.id, text=f'{notebook} → {pid}')
+    # remove CIDFILE
+    pathlib.Path.unlink(docker.CIDFILE)
 
-    response = f"Running notebook: {notebook}"
-    await context.bot.send_message(chat_id=update.effective_chat.id, text=response)
-    await context.bot.send_message(chat_id=update.effective_chat.id, text=output)
+    await context.bot.send_message(chat_id=update.effective_chat.id, text=f'Your token: {output}')
 
 
 async def kill(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -107,7 +109,7 @@ async def kill(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # remove the key-value pair from the dictionary
     del running[notebook]
 
-    # TODO: remove CIDFILE
+    
 
     await context.bot.send_message(chat_id=update.effective_chat.id, text=response)
 

@@ -1,3 +1,5 @@
+import re
+
 DOCKER_PORT = 8888
 HOST_PORT = 8888
 WORKDIR = '/home/jovyan/'
@@ -8,7 +10,7 @@ CIDFILE = '/tmp/running_jupyters'
 docker_command = [
     'docker',
     'run',
-    '--user', 'root',
+    # '--user', 'root',
     '-p', f'{HOST_PORT}:{DOCKER_PORT}',
     f'--cidfile={CIDFILE}',
     '-e', 'CHOWN_HOME=yes',
@@ -25,6 +27,11 @@ def docker_kill_command(pid):
         f'{pid}'
     ]
     return cmd
+
+def get_token(url):
+    pattern = '^.*token=([0-9a-f]*)$'
+    m = re.match(pattern, url)
+    return m.group(1)
 
 if __name__ == "__main__":
     print('The docker command is:')
