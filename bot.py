@@ -1,4 +1,3 @@
-from typing import List
 from dotenv import load_dotenv
 import os
 import logging
@@ -50,8 +49,13 @@ async def run(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
         return
     
+    assert len(context.args) == 1
     notebook = context.args[0]
-    await context.bot.send_message(chat_id=update.effective_chat.id, text=f"Starting notebook: {notebook}")
+
+    await context.bot.send_message(
+        chat_id=update.effective_chat.id, 
+        text=f'Starting notebook: {notebook}'
+    )
 
     #TODO: check if the cid file already exists
     # this means that the notebook is already running:
@@ -61,7 +65,7 @@ async def run(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     # print(f'Running {docker.docker_command}')
     docker_process = subprocess.Popen(
-        ' '.join(docker.docker_command),
+        ' '.join(docker.run(HOST_PORT=60000, notebook_name=notebook)),
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         shell=True
@@ -70,6 +74,7 @@ async def run(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # parse jupyter token
     output = ''
     for line in io.TextIOWrapper(docker_process.stderr, encoding="utf-8"):
+        print(line)
         output = line
         if 'http://127.0.0.1:8888' in line:
             break
@@ -89,8 +94,8 @@ async def run(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def kill(update: Update, context: ContextTypes.DEFAULT_TYPE):
     assert update.effective_chat is not None
     assert context.args is not None
+    assert len(context.args) == 1
     notebook = context.args[0]
-    response = f"Killed notebook: {notebook}"
     
     global running
     if notebook not in running.keys():
@@ -109,8 +114,7 @@ async def kill(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # remove the key-value pair from the dictionary
     del running[notebook]
 
-    
-
+    response = f"Killed notebook: {notebook}"
     await context.bot.send_message(chat_id=update.effective_chat.id, text=response)
 
 
