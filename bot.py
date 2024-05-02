@@ -35,14 +35,6 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await context.bot.send_message(chat_id=update.effective_chat.id, text="Hi there")
 
 
-async def echo(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    assert update.effective_chat is not None
-    assert update.message is not None
-    assert update.message.text is not None
-    to_send = update.message.text
-    await context.bot.send_message(chat_id=update.effective_chat.id, text=to_send)
-
-
 async def init(update: Update, context: ContextTypes.DEFAULT_TYPE):
     assert update.effective_chat is not None
 
@@ -152,14 +144,12 @@ def main() -> None:
     application = ApplicationBuilder().token(TOKEN).build()
 
     start_handler = CommandHandler("start", start)
-    echo_handler = MessageHandler(filters.TEXT & (~filters.COMMAND), echo)
     run_handler = CommandHandler("run", run)
     kill_handler = CommandHandler("kill", kill)
     ps_handler = CommandHandler("ps", ps)
     init_handler = CommandHandler("init", init)
 
     application.add_handler(start_handler)
-    application.add_handler(echo_handler)
     application.add_handler(run_handler)
     application.add_handler(kill_handler)
     application.add_handler(ps_handler)
