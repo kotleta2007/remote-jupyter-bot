@@ -13,6 +13,7 @@ import docker
 import subprocess
 import io
 import pathlib
+import notebooks
 
 # get token from environment
 load_dotenv()
@@ -29,6 +30,8 @@ running = {}
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     assert update.effective_chat is not None
+    # create notebooks.csv for INIT command
+    pathlib.Path(notebooks.CSV_FILEPATH).expanduser().touch()
     await context.bot.send_message(chat_id=update.effective_chat.id, text="Hi there")
 
 
@@ -39,6 +42,27 @@ async def echo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     to_send = update.message.text
     await context.bot.send_message(chat_id=update.effective_chat.id, text=to_send)
 
+
+async def init(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    assert update.effective_chat is not None
+
+    if len(context.args) != 2:
+        await context.bot.send_message(
+            chat_id=update.effective_chat.id, text="Provide a notebook name and type."
+        )
+    
+    alias, name = context.args[0], context.args[1]
+    notebook_created = notebooks.put(alias, name)
+    print(notebook_created)
+
+    if notebook_created:
+        await context.bot.send_message(
+            chat_id=update.effective_chat.id, text=f"{name} is now saved as {alias}."
+        )
+    else:
+        await context.bot.send_message(
+            chat_id=update.effective_chat.id, text=f"{alias} is already taken! Try again."
+        )
 
 async def run(update: Update, context: ContextTypes.DEFAULT_TYPE):
     assert update.effective_chat is not None
@@ -132,12 +156,14 @@ def main() -> None:
     run_handler = CommandHandler("run", run)
     kill_handler = CommandHandler("kill", kill)
     ps_handler = CommandHandler("ps", ps)
+    init_handler = CommandHandler("init", init)
 
     application.add_handler(start_handler)
     application.add_handler(echo_handler)
     application.add_handler(run_handler)
     application.add_handler(kill_handler)
     application.add_handler(ps_handler)
+    application.add_handler(init_handler)
 
     application.run_polling()
 
