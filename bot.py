@@ -208,8 +208,6 @@ async def man(update: Update, context: ContextTypes.DEFAULT_TYPE):
     assert update.effective_chat is not None
     assert context.args is not None
 
-    cmds = [start, man, ls, init, run, ps, kill]
-
     match context.args:
         case []:
             response = "Commands:"
@@ -231,17 +229,13 @@ def main() -> None:
     """Run the bot."""
     application = ApplicationBuilder().token(TOKEN).build()
 
-    application.add_handler(CommandHandler("start", start))
-    application.add_handler(CommandHandler("run", run))
-    application.add_handler(CommandHandler("kill", kill))
-    application.add_handler(CommandHandler("ps", ps))
-    application.add_handler(CommandHandler("init", init))
-    application.add_handler(CommandHandler("man", man))
-    application.add_handler(CommandHandler("ls", ls))
+    for cmd in cmds:
+        application.add_handler(CommandHandler(cmd.__name__, cmd))
     application.add_handler(MessageHandler(filters.COMMAND, noop))
 
     application.run_polling()
 
 
 if __name__ == "__main__":
+    cmds = [start, man, ls, init, run, ps, kill]
     main()
