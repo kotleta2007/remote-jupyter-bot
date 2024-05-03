@@ -43,7 +43,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     assert update.effective_chat is not None
     # create notebooks.csv for INIT command
-    pathlib.Path(notebooks.CSV_FILEPATH).expanduser().touch()
+    notebooks.CSV_FILEPATH.touch()
     await context.bot.send_message(chat_id=update.effective_chat.id, text="Local table created.")
 
 
@@ -51,7 +51,7 @@ async def init(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """
     add a new notebook
 
-    /add ALIAS TYPE → creates new notebook ALIAS of type TYPE
+    /init ALIAS TYPE → creates new notebook ALIAS of type TYPE
 
     ALIAS is a short name for your new notebook.
     You will use it with /run.
@@ -148,8 +148,13 @@ async def kill(update: Update, context: ContextTypes.DEFAULT_TYPE):
     /kill ALIAS → stops the Docker container for the notebook
     """
     assert update.effective_chat is not None
-    assert context.args is not None
-    assert len(context.args) == 1
+
+    if context.args is None or len(context.args) != 1:
+        await context.bot.send_message(
+            chat_id=update.effective_chat.id, text="Provide a notebook name."
+        )
+        return
+
     notebook = context.args[0]
     
     global running
@@ -190,12 +195,31 @@ async def ls(update: Update, context: ContextTypes.DEFAULT_TYPE):
     /ls → return all types of Jupyter notebooks available to user
     """
     assert update.effective_chat is not None
-    response = "Not yet implemented."
+    response = "Not yet implemented.\n"
+
+    notebooks = [
+        "quay.io/jupyter/scipy-notebook",
+        "quay.io/jupyter/pytorch-notebook",
+    ]
+
+    response += "\n".join(notebooks)
+
     await context.bot.send_message(chat_id=update.effective_chat.id, text=response)
 
 async def noop(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """
+    unrecognized command
+    """
     assert update.effective_chat is not None
     response = "Unrecognized command. Use /man to get list of commands."
+    await context.bot.send_message(chat_id=update.effective_chat.id, text=response)
+
+async def msg(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """
+    ignore messages
+    """
+    assert update.effective_chat is not None
+    response = "Let's stick to commands! 😃"
     await context.bot.send_message(chat_id=update.effective_chat.id, text=response)
 
 async def man(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -232,6 +256,7 @@ def main() -> None:
     for cmd in cmds:
         application.add_handler(CommandHandler(cmd.__name__, cmd))
     application.add_handler(MessageHandler(filters.COMMAND, noop))
+    application.add_handler(MessageHandler(None, msg))
 
     application.run_polling()
 

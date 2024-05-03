@@ -1,6 +1,7 @@
 import csv
+import pathlib
 
-CSV_FILEPATH = '~/git/remote-jupyter-bot/notebooks.csv'
+CSV_FILEPATH = pathlib.Path('~/git/remote-jupyter-bot/notebooks.csv').expanduser()
 
 def put(alias, image):
     not_found = get(alias) is None
