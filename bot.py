@@ -15,6 +15,8 @@ import io
 import pathlib
 import notebooks
 
+# For all messaging, make lines ~50 columns long.
+
 # get token from environment
 load_dotenv()
 TOKEN = os.getenv("TELEGRAM_TOKEN")
@@ -29,19 +31,42 @@ logging.basicConfig(
 running = {}
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """
+    create a local table of notebooks
+
+    Greet the user. 
+
+    Create a new local file that saves 
+    the map of names to notebooks.
+    By default, this file is called `notebooks.csv`.
+    """
+
     assert update.effective_chat is not None
     # create notebooks.csv for INIT command
     pathlib.Path(notebooks.CSV_FILEPATH).expanduser().touch()
-    await context.bot.send_message(chat_id=update.effective_chat.id, text="Hi there")
+    await context.bot.send_message(chat_id=update.effective_chat.id, text="Local table created.")
 
 
 async def init(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """
+    add a new notebook
+
+    /add ALIAS TYPE → creates new notebook ALIAS of type TYPE
+
+    ALIAS is a short name for your new notebook.
+    You will use it with /run.
+
+    TYPE is one of the available types of notebooks.
+    You can find the whole list with /ls.
+    """
     assert update.effective_chat is not None
+    assert context.args is not None
 
     if len(context.args) != 2:
         await context.bot.send_message(
             chat_id=update.effective_chat.id, text="Provide a notebook name and type."
         )
+        return
     
     alias, name = context.args[0], context.args[1]
     notebook_created = notebooks.put(alias, name)
@@ -57,6 +82,15 @@ async def init(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
 
 async def run(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """
+    run a notebook
+
+    /run ALIAS → starts an instance of a notebook
+    
+    ALIAS refers to one of the existing notebooks on your machine.
+    These are created by calling the /init command
+    and stored in a local CSV file.
+    """
     assert update.effective_chat is not None
 
     if context.args is None or len(context.args) == 0:
@@ -108,6 +142,11 @@ async def run(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def kill(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """
+    kill a running instance of a notebook
+
+    /kill ALIAS → stops the Docker container for the notebook
+    """
     assert update.effective_chat is not None
     assert context.args is not None
     assert len(context.args) == 1
@@ -135,8 +174,23 @@ async def kill(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def ps(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """
+    view currently running Jupyter notebooks
+
+    /ps → return all currently running instances
+    """
     assert update.effective_chat is not None
     response = f"Currently running: {running}"
+    await context.bot.send_message(chat_id=update.effective_chat.id, text=response)
+
+async def ls(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """
+    view available Jupyter notebooks
+
+    /ls → return all types of Jupyter notebooks available to user
+    """
+    assert update.effective_chat is not None
+    response = "Not yet implemented."
     await context.bot.send_message(chat_id=update.effective_chat.id, text=response)
 
 async def noop(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -145,14 +199,31 @@ async def noop(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await context.bot.send_message(chat_id=update.effective_chat.id, text=response)
 
 async def man(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """
+    describe a command OR list all commands
+
+    /man → list all commands (name, summary)
+    /man CMD_NAME → provide full description of command
+    """
     assert update.effective_chat is not None
-    response = "Commands:"
-    response += "\n/man [COMMAND] -- describe a command OR list all commands"
-    response += "\n/ls -- view available Jupyter notebooks"
-    response += "\n/ps -- view currently running Jupyter notebooks"
-    response += "\n/start -- create a local table of notebooks"
-    response += "\n/init -- add a new notebook"
-    response += "\n/kill -- kill a running instance of a notebook"
+    assert context.args is not None
+
+    cmds = [start, man, ls, init, run, ps, kill]
+
+    match context.args:
+        case []:
+            response = "Commands:"
+            for cmd in cmds:
+                assert cmd.__doc__ is not None
+                response += f"\n/{cmd.__name__} -- {cmd.__doc__.splitlines()[1]}"
+        case [cmd_name] if [x for x in cmds if cmd_name.lstrip("/") == x.__name__]:
+            cmd = next(x for x in cmds if cmd_name.lstrip("/") == x.__name__)
+            response = f"\n/{cmd.__name__} -- {cmd.__doc__}"
+        case [cmd_name]:
+            response = "Command not found."
+        case _:
+            response = "Provide one command."
+    
     await context.bot.send_message(chat_id=update.effective_chat.id, text=response)
 
 
@@ -166,6 +237,7 @@ def main() -> None:
     application.add_handler(CommandHandler("ps", ps))
     application.add_handler(CommandHandler("init", init))
     application.add_handler(CommandHandler("man", man))
+    application.add_handler(CommandHandler("ls", ls))
     application.add_handler(MessageHandler(filters.COMMAND, noop))
 
     application.run_polling()
