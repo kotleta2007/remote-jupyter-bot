@@ -59,7 +59,7 @@ async def init(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def run(update: Update, context: ContextTypes.DEFAULT_TYPE):
     assert update.effective_chat is not None
 
-    if context.args is None:
+    if context.args is None or len(context.args) == 0:
         await context.bot.send_message(
             chat_id=update.effective_chat.id, text="Provide a notebook name."
         )
@@ -139,21 +139,34 @@ async def ps(update: Update, context: ContextTypes.DEFAULT_TYPE):
     response = f"Currently running: {running}"
     await context.bot.send_message(chat_id=update.effective_chat.id, text=response)
 
+async def noop(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    assert update.effective_chat is not None
+    response = "Unrecognized command. Use /man to get list of commands."
+    await context.bot.send_message(chat_id=update.effective_chat.id, text=response)
+
+async def man(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    assert update.effective_chat is not None
+    response = "Commands:"
+    response += "\n/man [COMMAND] -- describe a command OR list all commands"
+    response += "\n/ls -- view available Jupyter notebooks"
+    response += "\n/ps -- view currently running Jupyter notebooks"
+    response += "\n/start -- create a local table of notebooks"
+    response += "\n/init -- add a new notebook"
+    response += "\n/kill -- kill a running instance of a notebook"
+    await context.bot.send_message(chat_id=update.effective_chat.id, text=response)
+
+
 def main() -> None:
     """Run the bot."""
     application = ApplicationBuilder().token(TOKEN).build()
 
-    start_handler = CommandHandler("start", start)
-    run_handler = CommandHandler("run", run)
-    kill_handler = CommandHandler("kill", kill)
-    ps_handler = CommandHandler("ps", ps)
-    init_handler = CommandHandler("init", init)
-
-    application.add_handler(start_handler)
-    application.add_handler(run_handler)
-    application.add_handler(kill_handler)
-    application.add_handler(ps_handler)
-    application.add_handler(init_handler)
+    application.add_handler(CommandHandler("start", start))
+    application.add_handler(CommandHandler("run", run))
+    application.add_handler(CommandHandler("kill", kill))
+    application.add_handler(CommandHandler("ps", ps))
+    application.add_handler(CommandHandler("init", init))
+    application.add_handler(CommandHandler("man", man))
+    application.add_handler(MessageHandler(filters.COMMAND, noop))
 
     application.run_polling()
 
