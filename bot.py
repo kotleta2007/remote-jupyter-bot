@@ -69,6 +69,13 @@ async def init(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
     
     alias, name = context.args[0], context.args[1]
+
+    if name not in notebook_types:
+        await context.bot.send_message(
+            chat_id=update.effective_chat.id, text="Invalid notebook type. Consult /ls for available notebook types."
+        )
+        return
+
     notebook_created = notebooks.put(alias, name)
     print(notebook_created)
 
@@ -100,12 +107,7 @@ async def run(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
     
     assert len(context.args) == 1
-    notebook = context.args[0]
-
-    await context.bot.send_message(
-        chat_id=update.effective_chat.id, 
-        text=f'Starting notebook: {notebook}'
-    )
+    notebook_name = context.args[0]
 
     #TODO: check if the cid file already exists
     # this means that the notebook is already running:
@@ -114,8 +116,21 @@ async def run(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # (multiple instances of a PyTorch notebook)
 
     # print(f'Running {docker.docker_command}')
+    notebook_type = notebooks.get(notebook_name)
+
+    if notebook_type is None:
+        await context.bot.send_message(
+            chat_id=update.effective_chat.id, text="Notebook doesn't exist. Create it with /init."
+        )
+        return
+
+    await context.bot.send_message(
+        chat_id=update.effective_chat.id, 
+        text=f'Starting notebook: {notebook_name}'
+    )
+
     docker_process = subprocess.Popen(
-        ' '.join(docker.run(HOST_PORT=60000, notebook_name=notebook)),
+        ' '.join(docker.run(HOST_PORT=60000, notebook_name=notebook_name, notebook_type=notebook_type)),
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         shell=True
@@ -134,7 +149,7 @@ async def run(update: Update, context: ContextTypes.DEFAULT_TYPE):
     with open(docker.CIDFILE, 'r') as cidfile:
         pid = cidfile.read()
         global running
-        running[notebook] = pid
+        running[notebook_name] = pid
     # remove CIDFILE
     pathlib.Path.unlink(docker.CIDFILE)
 
@@ -155,10 +170,10 @@ async def kill(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
         return
 
-    notebook = context.args[0]
+    notebook_name = context.args[0]
     
     global running
-    if notebook not in running.keys():
+    if notebook_name not in running.keys():
         await context.bot.send_message(
             chat_id=update.effective_chat.id, 
             text='No such notebook currently running.'
@@ -166,15 +181,15 @@ async def kill(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
     
     # kill the docker container
-    docker_process = subprocess.Popen(
-        docker.docker_kill_command(running[notebook]),
+    subprocess.Popen(
+        docker.docker_kill_command(running[notebook_name]),
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE
     )
     # remove the key-value pair from the dictionary
-    del running[notebook]
+    del running[notebook_name]
 
-    response = f"Killed notebook: {notebook}"
+    response = f"Killed notebook: {notebook_name}"
     await context.bot.send_message(chat_id=update.effective_chat.id, text=response)
 
 
@@ -262,6 +277,7 @@ def main() -> None:
 if __name__ == "__main__":
     cmds = [start, man, ls, init, run, ps, kill]
     notebook_types = [
+        "quay.io/jupyter/minimal-notebook",
         "quay.io/jupyter/scipy-notebook",
         "quay.io/jupyter/pytorch-notebook",
     ]

@@ -4,13 +4,14 @@ DOCKER_PORT = 8888
 HOST_PORT = 60000 # 60000-61000 are available (used by mosh, but we don't use mosh)
 WORKDIR = '/home/jovyan/'
 # IMAGE = 'quay.io/jupyter/pytorch-notebook'
-IMAGE = 'jupyter-tinygrad'
+# IMAGE = 'jupyter-tinygrad'
+IMAGE = 'quay.io/jupyter/scipy-notebook'
 LOCALDIR = '/home/mark/python/'
 CIDFILE = '/tmp/docker_cid'
 
 def run(HOST_PORT=60000, 
         notebook_name='notebook', 
-        IMAGE=IMAGE
+        notebook_type=IMAGE
     ):
     cmd = [
         'docker',
@@ -22,9 +23,9 @@ def run(HOST_PORT=60000,
         # necessary for initializing new host folder
         # can be omitted for further accesses to LOCALDIR
         '--user', 'root', 
-        '-v', f'{LOCALDIR}/{IMAGE}/{notebook_name}:{WORKDIR}',
+        '-v', f'{LOCALDIR}/{notebook_type}/{notebook_name}:{WORKDIR}',
         '-w', f'{WORKDIR}',
-        f'{IMAGE}'
+        f'{notebook_type}'
     ]
     return cmd
 
