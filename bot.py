@@ -27,7 +27,7 @@ logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(name)s", level=logging.INFO
 )
 
-# Map(Name -> CID)
+# Map(Alias -> CID)
 running = {}
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -195,14 +195,12 @@ async def ls(update: Update, context: ContextTypes.DEFAULT_TYPE):
     /ls → return all types of Jupyter notebooks available to user
     """
     assert update.effective_chat is not None
-    response = "Not yet implemented.\n"
 
-    notebooks = [
-        "quay.io/jupyter/scipy-notebook",
-        "quay.io/jupyter/pytorch-notebook",
-    ]
-
-    response += "\n".join(notebooks)
+    response = "Available notebooks:\n"
+    response += "\n".join(notebooks.read_all())
+ 
+    response += "\n\nNotebook types:\n"
+    response += "\n".join(notebook_types)
 
     await context.bot.send_message(chat_id=update.effective_chat.id, text=response)
 
@@ -263,4 +261,8 @@ def main() -> None:
 
 if __name__ == "__main__":
     cmds = [start, man, ls, init, run, ps, kill]
+    notebook_types = [
+        "quay.io/jupyter/scipy-notebook",
+        "quay.io/jupyter/pytorch-notebook",
+    ]
     main()

@@ -16,4 +16,9 @@ def get(alias):
         reader = csv.reader(file)
         return next((line[1] for line in reader if line[0] == alias), None)
 
+def read_all():
+    with open(CSV_FILEPATH, 'r') as file:
+        reader = csv.reader(file)
+        return [f"{line[0]}: {line[1]}" for line in reader]
+
 # design special keyboard for choosing correct type of notebook
