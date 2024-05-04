@@ -1,4 +1,5 @@
 import re
+import pathlib
 
 DOCKER_PORT = 8888
 HOST_PORT = 60000 # 60000-61000 are available (used by mosh, but we don't use mosh)
@@ -6,7 +7,7 @@ WORKDIR = '/home/jovyan/'
 # IMAGE = 'quay.io/jupyter/pytorch-notebook'
 # IMAGE = 'jupyter-tinygrad'
 IMAGE = 'quay.io/jupyter/scipy-notebook'
-LOCALDIR = '/home/mark/python/'
+LOCALDIR = pathlib.Path('~/python/').expanduser()
 CIDFILE = '/tmp/docker_cid'
 
 def run(HOST_PORT=60000, 
