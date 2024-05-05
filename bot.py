@@ -153,7 +153,8 @@ async def run(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # remove CIDFILE
     pathlib.Path.unlink(docker.CIDFILE)
 
-    await context.bot.send_message(chat_id=update.effective_chat.id, text=f'Your token: {output}')
+    await context.bot.send_message(chat_id=update.effective_chat.id, text=f'Your token:')
+    await context.bot.send_message(chat_id=update.effective_chat.id, text=output)
 
 
 async def kill(update: Update, context: ContextTypes.DEFAULT_TYPE):
