@@ -194,6 +194,28 @@ async def kill(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await context.bot.send_message(chat_id=update.effective_chat.id, text=response)
 
 
+async def killall(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """
+    kill all running instances
+
+    /killall → stops all Docker containers
+    """
+    assert update.effective_chat is not None
+
+    global running
+
+    for notebook_name in running.keys():
+        # kill the docker container
+        subprocess.Popen(
+            docker.docker_kill_command(running[notebook_name]),
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE
+        )
+        response = f"Killed notebook: {notebook_name}"
+        await context.bot.send_message(chat_id=update.effective_chat.id, text=response)
+    running.clear()
+
+
 async def ps(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """
     view currently running Jupyter notebooks
@@ -276,7 +298,7 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    cmds = [start, man, ls, init, run, ps, kill]
+    cmds = [start, man, ls, init, run, ps, kill, killall]
     notebook_types = [
         "quay.io/jupyter/minimal-notebook",
         "quay.io/jupyter/scipy-notebook",
