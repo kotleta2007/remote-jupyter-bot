@@ -20,6 +20,7 @@ def run(HOST_PORT=60000,
         '-p', f'{HOST_PORT}:{DOCKER_PORT}',
         f'--cidfile={CIDFILE}',
         '-e', 'CHOWN_HOME=yes',
+        '-e', 'GRANT_SUDO=yes',
         '-e', "CHOWN_HOME_OPTS='-R'",
         # necessary for initializing new host folder
         # can be omitted for further accesses to LOCALDIR

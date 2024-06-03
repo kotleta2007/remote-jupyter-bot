@@ -303,5 +303,6 @@ if __name__ == "__main__":
         "quay.io/jupyter/minimal-notebook",
         "quay.io/jupyter/scipy-notebook",
         "quay.io/jupyter/pytorch-notebook",
+        "quay.io/jupyter/tensorflow-notebook",
     ]
     main()
